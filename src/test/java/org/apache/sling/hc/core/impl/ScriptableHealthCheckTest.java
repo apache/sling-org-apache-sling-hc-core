@@ -18,7 +18,6 @@
 package org.apache.sling.hc.core.impl;
 
 import java.lang.reflect.Field;
-import java.util.Dictionary;
 
 import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
@@ -27,7 +26,6 @@ import org.apache.sling.hc.api.Result;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Matchers;
-import org.osgi.service.component.ComponentContext;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -37,8 +35,7 @@ import static org.mockito.Mockito.when;
 public class ScriptableHealthCheckTest {
     
     private ScriptableHealthCheck hc;
-    private Dictionary<String, String> props;
-    private ComponentContext ctx;
+
     private final JmxScriptBindingsProvider jmxScriptBindingsProvider = new JmxScriptBindingsProvider();
 
     private void assertExpression(String expression, String languageExtension, boolean expected) throws Exception {
