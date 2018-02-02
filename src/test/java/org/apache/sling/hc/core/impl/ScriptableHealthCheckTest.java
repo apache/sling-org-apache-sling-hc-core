@@ -17,11 +17,10 @@
  */
 package org.apache.sling.hc.core.impl;
 
-import java.lang.reflect.Field;
-
 import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
 
+import org.apache.commons.lang3.reflect.FieldUtils;
 import org.apache.sling.hc.api.Result;
 import org.junit.Before;
 import org.junit.Test;
@@ -43,9 +42,7 @@ public class ScriptableHealthCheckTest {
         assertNotNull("With the rhino jar in our classpath, we should get a js script engine", rhino);
         final ScriptEngineManager manager = mock(ScriptEngineManager.class);
         when(manager.getEngineByExtension(Matchers.same("ecma"))).thenReturn(rhino);
-        final Field f = hc.getClass().getDeclaredField("scriptEngineManager");
-        f.setAccessible(true);
-        f.set(hc, manager);
+        FieldUtils.writeDeclaredField(hc, "scriptEngineManager", manager, true);
 
         final ScriptableHealthCheckConfiguration configuration = mock(ScriptableHealthCheckConfiguration.class);
         when(configuration.expression()).thenReturn(expression);
