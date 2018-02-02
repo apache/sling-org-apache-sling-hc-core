@@ -17,24 +17,24 @@
  */
 package org.apache.sling.hc.core.impl;
 
-import static org.junit.Assert.assertEquals;
-
-import java.util.HashMap;
-import java.util.Map;
-
 import org.apache.sling.hc.api.Result;
 import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class JmxAttributeHealthCheckTest {
 
     static void assertJmxValue(String objectName, String attributeName, String constraint, boolean expected) {
         final JmxAttributeHealthCheck hc = new JmxAttributeHealthCheck();
 
-        final Map<String, Object> props = new HashMap<String, Object>();
-        props.put(JmxAttributeHealthCheck.PROP_OBJECT_NAME, objectName);
-        props.put(JmxAttributeHealthCheck.PROP_ATTRIBUTE_NAME, attributeName);
-        props.put(JmxAttributeHealthCheck.PROP_CONSTRAINT, constraint);
-        hc.activate(props);
+        final JmxAttributeHealthCheckConfiguration configuration = mock(JmxAttributeHealthCheckConfiguration.class);
+        when(configuration.mbean_name()).thenReturn(objectName);
+        when(configuration.attribute_name()).thenReturn(attributeName);
+        when(configuration.attribute_value_constraint()).thenReturn(constraint);
+
+        hc.activate(configuration);
 
         final Result r = hc.execute();
         assertEquals("Expected result " + expected, expected, r.isOk());

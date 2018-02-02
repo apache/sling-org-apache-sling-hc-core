@@ -28,40 +28,26 @@ import java.util.List;
 
 import org.apache.commons.lang3.StringEscapeUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.felix.scr.annotations.Activate;
-import org.apache.felix.scr.annotations.Component;
-import org.apache.felix.scr.annotations.Property;
-import org.apache.felix.scr.annotations.Service;
 import org.apache.sling.commons.osgi.PropertiesUtil;
 import org.apache.sling.hc.api.Result;
 import org.apache.sling.hc.api.ResultLog.Entry;
 import org.apache.sling.hc.api.execution.HealthCheckExecutionResult;
 import org.apache.sling.hc.util.FormattingResultLog;
 import org.osgi.service.component.ComponentContext;
+import org.osgi.service.component.annotations.Activate;
+import org.osgi.service.component.annotations.Component;
 
 /** Serializes health check results into html format. */
-@Service(ResultHtmlSerializer.class)
-@Component(metatype = true, name = "Apache Sling Health Check Result HTML Serializer", description = "Serializer for health check results in HTML format")
+@Component(
+    service = ResultHtmlSerializer.class
+)
 public class ResultHtmlSerializer {
-    private static final String CSS_STYLE_DEFAULT = "body { font-size:12px; font-family:arial,verdana,sans-serif;background-color:#FFFDF1; }\n"
-            + "h1 { font-size:20px;}\n"
-            + "table { font-size:12px; border:#ccc 1px solid; border-radius:3px; }\n"
-            + "table th { padding:5px; text-align: left; background: #ededed; }\n"
-            + "table td { padding:5px; border-top: 1px solid #ffffff; border-bottom:1px solid #e0e0e0; border-left: 1px solid #e0e0e0; }\n"
-            + ".statusOK { background-color:#CCFFCC;}\n"
-            + ".statusWARN { background-color:#FFE569;}\n"
-            + ".statusCRITICAL { background-color:#F0975A;}\n"
-            + ".statusHEALTH_CHECK_ERROR { background-color:#F16D4E;}\n"
-            + ".helpText { color:grey; font-size:80%; }\n";
-    public static final String PROPERTY_CSS_STYLE = "styleString";
-    @Property(name = PROPERTY_CSS_STYLE, label = "CSS Style",
-            description = "CSS Style - can be configured to change the look and feel of the html result page.", value = CSS_STYLE_DEFAULT)
+
     private String styleString;
 
     @Activate
-    protected final void activate(final ComponentContext context) {
-        final Dictionary<?, ?> properties = context.getProperties();
-        this.styleString = PropertiesUtil.toString(properties.get(PROPERTY_CSS_STYLE), CSS_STYLE_DEFAULT);
+    protected final void activate(final ResultHtmlSerializerConfiguration configuration) {
+        this.styleString = configuration.styleString();
     }
 
     public String serialize(final Result overallResult, final List<HealthCheckExecutionResult> executionResults, String escapedHelpText, boolean includeDebug) {

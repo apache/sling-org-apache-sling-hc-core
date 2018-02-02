@@ -17,8 +17,6 @@
  */
 package org.apache.sling.hc.core.impl.executor;
 
-import static org.apache.sling.hc.util.FormattingResultLog.msHumanReadable;
-
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -36,14 +34,6 @@ import java.util.Map;
 import java.util.Set;
 
 import org.apache.commons.lang3.time.StopWatch;
-import org.apache.felix.scr.annotations.Activate;
-import org.apache.felix.scr.annotations.Component;
-import org.apache.felix.scr.annotations.Deactivate;
-import org.apache.felix.scr.annotations.Modified;
-import org.apache.felix.scr.annotations.Property;
-import org.apache.felix.scr.annotations.Reference;
-import org.apache.felix.scr.annotations.Service;
-import org.apache.sling.commons.osgi.PropertiesUtil;
 import org.apache.sling.commons.threads.ModifiableThreadPoolConfig;
 import org.apache.sling.commons.threads.ThreadPool;
 import org.apache.sling.commons.threads.ThreadPoolManager;
@@ -63,41 +53,34 @@ import org.osgi.framework.InvalidSyntaxException;
 import org.osgi.framework.ServiceEvent;
 import org.osgi.framework.ServiceListener;
 import org.osgi.framework.ServiceReference;
+import org.osgi.service.component.annotations.Activate;
+import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Deactivate;
+import org.osgi.service.component.annotations.Modified;
+import org.osgi.service.component.annotations.Reference;
+import org.osgi.service.metatype.annotations.Designate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.apache.sling.hc.core.impl.executor.HealthCheckExecutorImplConfiguration.LONGRUNNING_FUTURE_THRESHOLD_CRITICAL_DEFAULT_MS;
+import static org.apache.sling.hc.core.impl.executor.HealthCheckExecutorImplConfiguration.RESULT_CACHE_TTL_DEFAULT_MS;
+import static org.apache.sling.hc.core.impl.executor.HealthCheckExecutorImplConfiguration.TIMEOUT_DEFAULT_MS;
+import static org.apache.sling.hc.util.FormattingResultLog.msHumanReadable;
 
 /**
  * Runs health checks for a given list of tags in parallel.
  *
  */
-@Service(value = {HealthCheckExecutor.class, ExtendedHealthCheckExecutor.class})
-@Component(label = "Apache Sling Health Check Executor",
-        description = "Runs health checks for a given list of tags in parallel.",
-        metatype = true, immediate = true) // immediate = true to keep the cache!
+@Component(
+    service = {HealthCheckExecutor.class, ExtendedHealthCheckExecutor.class},
+    immediate = true // immediate = true to keep the cache!
+)
+@Designate(
+    ocd = HealthCheckExecutorImplConfiguration.class
+)
 public class HealthCheckExecutorImpl implements ExtendedHealthCheckExecutor, ServiceListener {
 
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
-
-    private static final long TIMEOUT_DEFAULT_MS = 2000;
-
-    public static final String PROP_TIMEOUT_MS = "timeoutInMs";
-    @Property(name = PROP_TIMEOUT_MS, label = "Timeout",
-            description = "Timeout in ms until a check is marked as timed out",
-            longValue = TIMEOUT_DEFAULT_MS)
-
-    private static final long LONGRUNNING_FUTURE_THRESHOLD_CRITICAL_DEFAULT_MS = 1000 * 60 * 5;
-
-    public static final String PROP_LONGRUNNING_FUTURE_THRESHOLD_CRITICAL_MS = "longRunningFutureThresholdForCriticalMs";
-    @Property(name = PROP_LONGRUNNING_FUTURE_THRESHOLD_CRITICAL_MS, label = "Timeout threshold for CRITICAL",
-            description = "Threshold in ms until a check is marked as 'exceedingly' timed out and will marked CRITICAL instead of WARN only",
-            longValue = LONGRUNNING_FUTURE_THRESHOLD_CRITICAL_DEFAULT_MS)
-
-    private static final long RESULT_CACHE_TTL_DEFAULT_MS = 1000 * 2;
-    public static final String PROP_RESULT_CACHE_TTL_MS = "resultCacheTtlInMs";
-    @Property(name = PROP_RESULT_CACHE_TTL_MS, label = "Results Cache TTL in Ms",
-            description = "Result Cache time to live - results will be cached for the given time",
-            longValue = RESULT_CACHE_TTL_DEFAULT_MS)
-
 
     private long timeoutInMs;
 
@@ -114,19 +97,20 @@ public class HealthCheckExecutorImpl implements ExtendedHealthCheckExecutor, Ser
 
     @Reference
     private ThreadPoolManager threadPoolManager;
+
     private ThreadPool hcThreadPool;
 
     private BundleContext bundleContext;
 
     @Activate
-    protected final void activate(final Map<String, Object> properties, final BundleContext bundleContext) {
+    protected final void activate(final HealthCheckExecutorImplConfiguration configuration, final BundleContext bundleContext) {
         this.bundleContext = bundleContext;
 
         final ModifiableThreadPoolConfig hcThreadPoolConfig = new ModifiableThreadPoolConfig();
         hcThreadPoolConfig.setMaxPoolSize(25);
         hcThreadPool = threadPoolManager.create(hcThreadPoolConfig, "Health Check Thread Pool");
 
-        this.modified(properties);
+        configure(configuration);
 
         try {
             this.bundleContext.addServiceListener(this, "("
@@ -138,23 +122,8 @@ public class HealthCheckExecutorImpl implements ExtendedHealthCheckExecutor, Ser
     }
 
     @Modified
-    protected final void modified(final Map<String, Object> properties) {
-        this.timeoutInMs = PropertiesUtil.toLong(properties.get(PROP_TIMEOUT_MS), TIMEOUT_DEFAULT_MS);
-
-        if ( this.timeoutInMs <= 0L) {
-            this.timeoutInMs = TIMEOUT_DEFAULT_MS;
-        }
-
-        this.longRunningFutureThresholdForRedMs = PropertiesUtil.toLong(properties.get(PROP_LONGRUNNING_FUTURE_THRESHOLD_CRITICAL_MS),
-                LONGRUNNING_FUTURE_THRESHOLD_CRITICAL_DEFAULT_MS);
-        if (this.longRunningFutureThresholdForRedMs <= 0L) {
-            this.longRunningFutureThresholdForRedMs = LONGRUNNING_FUTURE_THRESHOLD_CRITICAL_DEFAULT_MS;
-        }
-
-        this.resultCacheTtlInMs = PropertiesUtil.toLong(properties.get(PROP_RESULT_CACHE_TTL_MS), RESULT_CACHE_TTL_DEFAULT_MS);
-        if (this.resultCacheTtlInMs <= 0L) {
-            this.resultCacheTtlInMs = RESULT_CACHE_TTL_DEFAULT_MS;
-        }
+    protected final void modified(final HealthCheckExecutorImplConfiguration configuration) {
+        configure(configuration);
     }
 
     @Deactivate
@@ -163,6 +132,23 @@ public class HealthCheckExecutorImpl implements ExtendedHealthCheckExecutor, Ser
         this.bundleContext.removeServiceListener(this);
         this.bundleContext = null;
         this.healthCheckResultCache.clear();
+    }
+
+    protected final void configure(final HealthCheckExecutorImplConfiguration configuration) {
+        this.timeoutInMs = configuration.timeoutInMs();
+        if (this.timeoutInMs <= 0L) {
+            this.timeoutInMs = TIMEOUT_DEFAULT_MS;
+        }
+
+        this.longRunningFutureThresholdForRedMs = configuration.longRunningFutureThresholdForCriticalMs();
+        if (this.longRunningFutureThresholdForRedMs <= 0L) {
+            this.longRunningFutureThresholdForRedMs = LONGRUNNING_FUTURE_THRESHOLD_CRITICAL_DEFAULT_MS;
+        }
+
+        this.resultCacheTtlInMs = configuration.resultCacheTtlInMs();
+        if (this.resultCacheTtlInMs <= 0L) {
+            this.resultCacheTtlInMs = RESULT_CACHE_TTL_DEFAULT_MS;
+        }
     }
 
     @Override

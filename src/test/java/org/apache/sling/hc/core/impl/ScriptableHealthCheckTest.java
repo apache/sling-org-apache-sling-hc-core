@@ -17,12 +17,8 @@
  */
 package org.apache.sling.hc.core.impl;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-
 import java.lang.reflect.Field;
 import java.util.Dictionary;
-import java.util.Hashtable;
 
 import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
@@ -31,8 +27,12 @@ import org.apache.sling.hc.api.Result;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Matchers;
-import org.mockito.Mockito;
 import org.osgi.service.component.ComponentContext;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class ScriptableHealthCheckTest {
     
@@ -44,18 +44,20 @@ public class ScriptableHealthCheckTest {
     private void assertExpression(String expression, String languageExtension, boolean expected) throws Exception {
         final ScriptEngine rhino = new ScriptEngineManager().getEngineByExtension("js");
         assertNotNull("With the rhino jar in our classpath, we should get a js script engine", rhino);
-        final ScriptEngineManager manager = Mockito.mock(ScriptEngineManager.class);
-        Mockito.when(manager.getEngineByExtension(Matchers.same("ecma"))).thenReturn(rhino);
+        final ScriptEngineManager manager = mock(ScriptEngineManager.class);
+        when(manager.getEngineByExtension(Matchers.same("ecma"))).thenReturn(rhino);
         final Field f = hc.getClass().getDeclaredField("scriptEngineManager");
         f.setAccessible(true);
         f.set(hc, manager);
-        
-        props.put(ScriptableHealthCheck.PROP_EXPRESSION, expression);
-        if(languageExtension != null) {
-            props.put(ScriptableHealthCheck.PROP_LANGUAGE_EXTENSION, languageExtension);
+
+        final ScriptableHealthCheckConfiguration configuration = mock(ScriptableHealthCheckConfiguration.class);
+        when(configuration.expression()).thenReturn(expression);
+        if (languageExtension != null) {
+            when(configuration.language_extension()).thenReturn(languageExtension);
+        } else {
+            when(configuration.language_extension()).thenReturn("ecma");
         }
-        Mockito.when(ctx.getProperties()).thenReturn(props);
-        hc.activate(ctx);
+        hc.activate(configuration);
         final Result r = hc.execute();
         assertEquals("Expecting result " + expected, expected, r.isOk());
     }
@@ -63,8 +65,6 @@ public class ScriptableHealthCheckTest {
     @Before
     public void setup() {
         hc = new ScriptableHealthCheck();
-        ctx = Mockito.mock(ComponentContext.class);
-        props = new Hashtable<String, String>();
         hc.bindBindingsValuesProvider(jmxScriptBindingsProvider);
     }
     

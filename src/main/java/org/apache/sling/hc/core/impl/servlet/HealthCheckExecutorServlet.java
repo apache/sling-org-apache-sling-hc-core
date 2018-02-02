@@ -34,12 +34,6 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.apache.commons.lang3.StringEscapeUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.felix.scr.annotations.Activate;
-import org.apache.felix.scr.annotations.Component;
-import org.apache.felix.scr.annotations.ConfigurationPolicy;
-import org.apache.felix.scr.annotations.Deactivate;
-import org.apache.felix.scr.annotations.Property;
-import org.apache.felix.scr.annotations.Reference;
 import org.apache.sling.commons.osgi.PropertiesUtil;
 import org.apache.sling.hc.api.Result;
 import org.apache.sling.hc.api.Result.Status;
@@ -48,7 +42,13 @@ import org.apache.sling.hc.api.execution.HealthCheckExecutionResult;
 import org.apache.sling.hc.api.execution.HealthCheckExecutor;
 import org.apache.sling.hc.api.execution.HealthCheckSelector;
 import org.osgi.service.component.ComponentContext;
+import org.osgi.service.component.annotations.Activate;
+import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.ConfigurationPolicy;
+import org.osgi.service.component.annotations.Deactivate;
+import org.osgi.service.component.annotations.Reference;
 import org.osgi.service.http.HttpService;
+import org.osgi.service.metatype.annotations.Designate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -69,9 +69,12 @@ import org.slf4j.LoggerFactory;
  * Useful in combination with load balancers.
  * <p>
  * NOTE: This servlet registers directly (low-level) at the HttpService and is not processed by sling (better performance, fewer dependencies, no authentication required, 503 can be sent without the progress tracker information). */
-@Component(label = "Apache Sling Health Check Executor Servlet",
-        description = "Serializes health check results into html or json format",
-        policy = ConfigurationPolicy.REQUIRE, metatype = true)
+@Component(
+    configurationPolicy = ConfigurationPolicy.REQUIRE
+)
+@Designate(
+    ocd = HealthCheckExecutorServletConfiguration.class
+)
 public class HealthCheckExecutorServlet extends HttpServlet {
     private static final long serialVersionUID = 8013511523994541848L;
 
@@ -125,25 +128,16 @@ public class HealthCheckExecutorServlet extends HttpServlet {
     private static final String CACHE_CONTROL_KEY = "Cache-control";
     private static final String CACHE_CONTROL_VALUE = "no-cache";
 
-    private static final String SERVLET_PATH_DEFAULT = "/system/health";
-
-    public static final String PROPERTY_SERVLET_PATH = "servletPath";
-    @Property(name = PROPERTY_SERVLET_PATH, label = "Path",
-            description = "Servlet path (defaults to " + SERVLET_PATH_DEFAULT + " in order to not be accessible via Apache/Internet)", value = SERVLET_PATH_DEFAULT)
-    private String servletPath;
-
     private String[] servletPaths;
 
-    public static final String PROPERTY_DISABLED = "disabled";
-    @Property(name = PROPERTY_DISABLED, label = "Disabled",
-            description = "Allows to disable the servlet if required for security reasons", boolValue = false)
     private boolean disabled;
 
-    private static final String CORS_ORIGIN_HEADER_NAME = "Access-Control-Allow-Origin";
-    public static final String CORS_ORIGIN_HEADER_DEFAULT_VALUE = "*";
-    public static final String PROPERTY_CORS_ORIGIN_HEADER_VALUE = "cors.accessControlAllowOrigin";
-    @Property(name = PROPERTY_CORS_ORIGIN_HEADER_VALUE, label = "CORS Access-Control-Allow-Origin", description = "Sets the Access-Control-Allow-Origin CORS header. If blank no header is sent.", value = CORS_ORIGIN_HEADER_DEFAULT_VALUE)
+    private String servletPath;
+
     private String corsAccessControlAllowOrigin;
+
+    private static final String CORS_ORIGIN_HEADER_NAME = "Access-Control-Allow-Origin";
+
 
     @Reference
     private HttpService httpService;
@@ -164,11 +158,10 @@ public class HealthCheckExecutorServlet extends HttpServlet {
     ResultTxtVerboseSerializer verboseTxtSerializer;
 
     @Activate
-    protected final void activate(final ComponentContext context) {
-        final Dictionary<?, ?> properties = context.getProperties();
-        this.servletPath = PropertiesUtil.toString(properties.get(PROPERTY_SERVLET_PATH), SERVLET_PATH_DEFAULT);
-        this.disabled = PropertiesUtil.toBoolean(properties.get(PROPERTY_DISABLED), false);
-        this.corsAccessControlAllowOrigin = PropertiesUtil.toString(properties.get(PROPERTY_CORS_ORIGIN_HEADER_VALUE), CORS_ORIGIN_HEADER_DEFAULT_VALUE);
+    protected final void activate(final HealthCheckExecutorServletConfiguration configuration) {
+        this.servletPath = configuration.servletPath();
+        this.disabled = configuration.disabled();
+        this.corsAccessControlAllowOrigin = configuration.cors_accessControlAllowOrigin();
 
         Map<String, HttpServlet> servletsToRegister = new LinkedHashMap<String, HttpServlet>();
         servletsToRegister.put(this.servletPath, this);

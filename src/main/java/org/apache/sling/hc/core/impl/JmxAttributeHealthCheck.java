@@ -18,74 +18,46 @@
 package org.apache.sling.hc.core.impl;
 
 import java.lang.management.ManagementFactory;
-import java.util.Map;
 
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
 
-import org.apache.felix.scr.annotations.Activate;
-import org.apache.felix.scr.annotations.Component;
-import org.apache.felix.scr.annotations.ConfigurationPolicy;
-import org.apache.felix.scr.annotations.Properties;
-import org.apache.felix.scr.annotations.Property;
-import org.apache.felix.scr.annotations.PropertyUnbounded;
-import org.apache.felix.scr.annotations.Service;
-import org.apache.sling.commons.osgi.PropertiesUtil;
 import org.apache.sling.hc.api.HealthCheck;
 import org.apache.sling.hc.api.Result;
 import org.apache.sling.hc.util.FormattingResultLog;
 import org.apache.sling.hc.util.SimpleConstraintChecker;
+import org.osgi.service.component.annotations.Activate;
+import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.ConfigurationPolicy;
+import org.osgi.service.metatype.annotations.Designate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /** {@link HealthCheck} that checks a single JMX attribute */
 @Component(
-        configurationFactory=true,
-        policy=ConfigurationPolicy.REQUIRE,
-        metatype=true,
-        label="Apache Sling JMX Attribute Health Check",
-        description="Checks the value of a single JMX attribute.")
-@Properties({
-    @Property(name=HealthCheck.NAME,
-            label="Name",
-            description="Name of this health check."),
-    @Property(name=HealthCheck.TAGS, unbounded=PropertyUnbounded.ARRAY,
-              label="Tags",
-              description="List of tags for this health check, used to select " +
-                        "subsets of health checks for execution e.g. by a composite health check."),
-    @Property(name=HealthCheck.MBEAN_NAME,
-              label="MBean Name",
-              description="Name of the MBean to create for this health check. If empty, no MBean is registered.")
-})
-@Service(value=HealthCheck.class)
+    service = HealthCheck.class,
+    configurationPolicy = ConfigurationPolicy.REQUIRE
+)
+@Designate(
+    ocd = JmxAttributeHealthCheckConfiguration.class,
+    factory = true
+)
 public class JmxAttributeHealthCheck implements HealthCheck {
 
     private final Logger log = LoggerFactory.getLogger(getClass());
+
     private String mbeanName;
     private String attributeName;
     private String constraint;
 
-    @Property(label="Check MBean Name",
-              description="The name of the MBean to check by this health check.")
-    public static final String PROP_OBJECT_NAME = "mbean.name";
-
-    @Property(label="Check Attribute Name",
-            description="The name of the MBean attribute to check by this health check.")
-    public static final String PROP_ATTRIBUTE_NAME = "attribute.name";
-
-    @Property(label="Check Attribute Constraint",
-            description="Constraint on the MBean attribute value.")
-    public static final String PROP_CONSTRAINT = "attribute.value.constraint";
-
-
     @Activate
-    protected void activate(final Map<String, Object> properties) {
-        mbeanName = PropertiesUtil.toString(properties.get(PROP_OBJECT_NAME), "");
-        attributeName = PropertiesUtil.toString(properties.get(PROP_ATTRIBUTE_NAME), "");
-        constraint = PropertiesUtil.toString(properties.get(PROP_CONSTRAINT), "");
+    protected void activate(final JmxAttributeHealthCheckConfiguration configuration) {
+        mbeanName = configuration.mbean_name();
+        attributeName = configuration.attribute_name();
+        constraint = configuration.attribute_value_constraint();
 
         log.debug("Activated with HealthCheck name={}, objectName={}, attribute={}, constraint={}",
-                new Object[] { properties.get(HealthCheck.NAME), mbeanName, attributeName, constraint });
+                new Object[] { configuration.hc_name(), mbeanName, attributeName, constraint });
     }
 
     @Override

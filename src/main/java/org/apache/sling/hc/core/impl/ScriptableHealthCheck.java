@@ -23,81 +23,53 @@ import javax.script.Bindings;
 import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
 
-import org.apache.felix.scr.annotations.Activate;
-import org.apache.felix.scr.annotations.Component;
-import org.apache.felix.scr.annotations.ConfigurationPolicy;
-import org.apache.felix.scr.annotations.Properties;
-import org.apache.felix.scr.annotations.Property;
-import org.apache.felix.scr.annotations.PropertyUnbounded;
-import org.apache.felix.scr.annotations.Reference;
-import org.apache.felix.scr.annotations.ReferenceCardinality;
-import org.apache.felix.scr.annotations.ReferencePolicy;
-import org.apache.felix.scr.annotations.Service;
-import org.apache.sling.commons.osgi.PropertiesUtil;
 import org.apache.sling.hc.api.HealthCheck;
 import org.apache.sling.hc.api.Result;
 import org.apache.sling.hc.util.FormattingResultLog;
 import org.apache.sling.scripting.api.BindingsValuesProvider;
-import org.osgi.service.component.ComponentContext;
+import org.osgi.service.component.annotations.Activate;
+import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.ConfigurationPolicy;
+import org.osgi.service.component.annotations.Reference;
+import org.osgi.service.component.annotations.ReferenceCardinality;
+import org.osgi.service.component.annotations.ReferencePolicy;
+import org.osgi.service.metatype.annotations.Designate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /** {@link HealthCheck} that checks a scriptable expression */
 @Component(
-        configurationFactory=true,
-        policy=ConfigurationPolicy.REQUIRE,
-        metatype=true,
-        label="Apache Sling Scriptable Health Check",
-        description="Uses scripted expressions to verify multiple JMX attributes or other values.")
-@Properties({
-    @Property(name=HealthCheck.NAME,
-            label="Name",
-            description="Name of this health check."),
-    @Property(name=HealthCheck.TAGS, unbounded=PropertyUnbounded.ARRAY,
-              label="Tags",
-              description="List of tags for this health check, used to select " +
-                        "subsets of health checks for execution e.g. by a composite health check."),
-    @Property(name=HealthCheck.MBEAN_NAME,
-              label="MBean Name",
-              description="Name of the MBean to create for this health check. If empty, no MBean is registered.")
-})
-@Service(value=HealthCheck.class)
+    service = HealthCheck.class,
+    configurationPolicy = ConfigurationPolicy.REQUIRE
+)
+@Designate(
+    ocd = ScriptableHealthCheckConfiguration.class,
+    factory = true
+)
 public class ScriptableHealthCheck implements HealthCheck {
 
     private final Logger log = LoggerFactory.getLogger(getClass());
     private String expression;
     private String languageExtension;
 
-    private static final String DEFAULT_LANGUAGE_EXTENSION = "ecma";
-
-    @Property(label="Expression",
-              description="The value of this expression must be \"true\" for this check to be successful.")
-    public static final String PROP_EXPRESSION = "expression";
-
-    @Property(value=DEFAULT_LANGUAGE_EXTENSION,
-              label="Language Extension",
-              description="File extension of the language to use to evaluate the " +
-                      "expression, for example \"ecma\" or \"groovy\", asssuming the corresponding script engine " +
-                      "is available. By default \"ecma\" is used.")
-    public static final String PROP_LANGUAGE_EXTENSION = "language.extension";
-
     @Reference
     private ScriptEngineManager scriptEngineManager;
 
     @Reference(
-            cardinality=ReferenceCardinality.OPTIONAL_MULTIPLE,
-            policy=ReferencePolicy.DYNAMIC,
-            referenceInterface=BindingsValuesProvider.class,
-            target="(context=healthcheck)")
+        cardinality = ReferenceCardinality.MULTIPLE,
+        policy = ReferencePolicy.DYNAMIC,
+        service = BindingsValuesProvider.class,
+        target = "(context=healthcheck)"
+    )
     private final Set<BindingsValuesProvider> bindingsValuesProviders = new HashSet<BindingsValuesProvider>();
 
     @Activate
-    protected void activate(ComponentContext ctx) {
-        expression = PropertiesUtil.toString(ctx.getProperties().get(PROP_EXPRESSION), "");
-        languageExtension = PropertiesUtil.toString(ctx.getProperties().get(PROP_LANGUAGE_EXTENSION), DEFAULT_LANGUAGE_EXTENSION);
+    protected void activate(final ScriptableHealthCheckConfiguration configuration) {
+        expression = configuration.expression();
+        languageExtension = configuration.language_extension();
 
         log.debug("Activated scriptable health check name={}, languageExtension={}, expression={}",
-                new Object[] {ctx.getProperties().get(HealthCheck.NAME),
+                new Object[] {configuration.hc_name(),
                 languageExtension, expression});
     }
 

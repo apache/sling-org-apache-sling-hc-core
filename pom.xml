@@ -24,13 +24,11 @@
     <parent>
         <groupId>org.apache.sling</groupId>
         <artifactId>sling</artifactId>
-        <version>26</version>
+        <version>33</version>
         <relativePath />
     </parent>
 
-    <groupId>org.apache.sling</groupId>
     <artifactId>org.apache.sling.hc.core</artifactId>
-    <packaging>bundle</packaging>
     <version>1.2.11-SNAPSHOT</version>
 
     <name>Apache Sling Health Check Core</name>
@@ -41,14 +39,11 @@
     </description>
 
     <properties>
-        <pax-exam.version>4.6.0</pax-exam.version>
+        <pax-exam.version>4.11.0</pax-exam.version>
         <pax-link.version>2.4.3</pax-link.version>
         <org.ops4j.pax.logging.DefaultServiceLog.level>INFO</org.ops4j.pax.logging.DefaultServiceLog.level>
         <felix.shell>false</felix.shell>
         <project.bundle.file>${project.build.directory}/${project.build.finalName}.jar</project.bundle.file>
-
-        <!-- temporarily until next release -->
-        <baseline.skip>true</baseline.skip>
     </properties>
     
     <scm>
@@ -61,14 +56,13 @@
     <build>
         <plugins>
             <plugin>
-                <groupId>org.apache.felix</groupId>
-                <artifactId>maven-scr-plugin</artifactId>
+                <groupId>biz.aQute.bnd</groupId>
+                <artifactId>bnd-maven-plugin</artifactId>
             </plugin>
-            <plugin>
-                <groupId>org.apache.felix</groupId>
-                <artifactId>maven-bundle-plugin</artifactId>
-                <extensions>true</extensions>
-            </plugin>
+          <plugin>
+            <groupId>biz.aQute.bnd</groupId>
+            <artifactId>bnd-baseline-maven-plugin</artifactId>
+          </plugin>
             <plugin>
               <groupId>org.jacoco</groupId>
               <artifactId>jacoco-maven-plugin</artifactId>
@@ -87,14 +81,6 @@
           <plugin>
             <groupId>org.apache.servicemix.tooling</groupId>
             <artifactId>depends-maven-plugin</artifactId>
-            <version>1.2</version>
-            <executions>
-              <execution>
-                <goals>
-                  <goal>generate-depends-file</goal>
-                </goals>
-              </execution>
-            </executions>
           </plugin>
             <plugin>
               <groupId>org.apache.maven.plugins</groupId>
@@ -122,11 +108,13 @@
     <dependencies>
         <dependency>
             <groupId>org.osgi</groupId>
-            <artifactId>org.osgi.core</artifactId>
+            <artifactId>osgi.core</artifactId>
+          <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>org.osgi</groupId>
-            <artifactId>org.osgi.compendium</artifactId>
+            <artifactId>osgi.cmpn</artifactId>
+          <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>org.apache.sling</groupId>
@@ -137,11 +125,12 @@
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
-            <version>1.6.2</version>
+          <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
+          <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.mockito</groupId>
@@ -158,7 +147,6 @@
          <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-simple</artifactId>
-            <version>1.6.2</version>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -200,7 +188,7 @@
        <dependency>
             <groupId>org.apache.felix</groupId>
             <artifactId>org.apache.felix.framework</artifactId>
-            <version>5.4.0</version>
+            <version>5.6.10</version>
             <scope>test</scope>
         </dependency>
           <dependency>
@@ -251,7 +239,6 @@
       <dependency>
         <groupId>javax.servlet</groupId>
         <artifactId>javax.servlet-api</artifactId>
-        <version>3.0.1</version>
         <scope>provided</scope>
       </dependency>
 

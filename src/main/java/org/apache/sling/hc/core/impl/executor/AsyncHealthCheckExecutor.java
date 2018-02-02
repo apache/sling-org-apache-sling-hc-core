@@ -28,11 +28,6 @@ import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.commons.lang3.StringUtils;
-import org.apache.felix.scr.annotations.Activate;
-import org.apache.felix.scr.annotations.Component;
-import org.apache.felix.scr.annotations.Deactivate;
-import org.apache.felix.scr.annotations.Reference;
-import org.apache.felix.scr.annotations.Service;
 import org.apache.sling.commons.scheduler.Scheduler;
 import org.apache.sling.hc.api.HealthCheck;
 import org.apache.sling.hc.api.Result;
@@ -46,6 +41,10 @@ import org.osgi.framework.ServiceEvent;
 import org.osgi.framework.ServiceListener;
 import org.osgi.framework.ServiceReference;
 import org.osgi.service.component.ComponentContext;
+import org.osgi.service.component.annotations.Activate;
+import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Deactivate;
+import org.osgi.service.component.annotations.Reference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -54,8 +53,10 @@ import org.slf4j.LoggerFactory;
  * execution. Used by HealthCheckExecutor.
  *
  */
-@Service({ AsyncHealthCheckExecutor.class })
-@Component(immediate = true)
+@Component(
+    service = AsyncHealthCheckExecutor.class,
+    immediate = true
+)
 public class AsyncHealthCheckExecutor implements ServiceListener {
 
     private static final Logger LOG = LoggerFactory.getLogger(AsyncHealthCheckExecutor.class);

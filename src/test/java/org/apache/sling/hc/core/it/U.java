@@ -101,8 +101,8 @@ public class U {
             provision(
                     bundle(bundleFile.toURI().toString()),
                     mavenBundle().groupId("javax.servlet").artifactId("javax.servlet-api").versionAsInProject(),
-                    mavenBundle("org.apache.felix", "org.apache.felix.scr", "1.6.2"),
-                    mavenBundle("org.apache.felix", "org.apache.felix.configadmin", "1.8.8"),
+                    mavenBundle("org.apache.felix", "org.apache.felix.scr", "2.0.14"),
+                    mavenBundle("org.apache.felix", "org.apache.felix.configadmin", "1.8.16"),
                     mavenBundle("org.apache.sling", "org.apache.sling.commons.osgi", "2.2.0"),
                     mavenBundle("org.apache.sling", "org.apache.sling.commons.johnzon").versionAsInProject(),
                     mavenBundle("org.apache.sling", "org.apache.sling.jcr.jcr-wrapper", "2.0.0"),

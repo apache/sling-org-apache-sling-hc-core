@@ -28,17 +28,17 @@ import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
 
 import org.apache.commons.lang3.StringUtils;
-import org.apache.felix.scr.annotations.Component;
-import org.apache.felix.scr.annotations.Service;
 import org.apache.sling.hc.api.Result;
 import org.apache.sling.hc.api.ResultLog;
 import org.apache.sling.hc.api.execution.HealthCheckExecutionResult;
+import org.osgi.service.component.annotations.Component;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /** Serializes health check results into json format. */
-@Service(ResultJsonSerializer.class)
-@Component(metatype = false)
+@Component(
+    service = ResultJsonSerializer.class
+)
 public class ResultJsonSerializer {
 
     private static final Logger LOG = LoggerFactory.getLogger(ResultJsonSerializer.class);

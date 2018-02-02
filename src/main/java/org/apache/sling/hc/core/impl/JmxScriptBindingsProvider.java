@@ -28,11 +28,9 @@ import javax.management.ObjectName;
 import javax.management.ReflectionException;
 import javax.script.Bindings;
 
-import org.apache.felix.scr.annotations.Component;
-import org.apache.felix.scr.annotations.Property;
-import org.apache.felix.scr.annotations.Service;
 import org.apache.sling.hc.util.FormattingResultLog;
 import org.apache.sling.scripting.api.BindingsValuesProvider;
+import org.osgi.service.component.annotations.Component;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,9 +38,12 @@ import org.slf4j.LoggerFactory;
  *  in scripted rules, to allow for writing scripted expressions
  *  like jmx.attribute("java.lang:type=ClassLoading", "LoadedClassCount") &gt; 100
  */
-@Component
-@Service
-@Property(name="context", value="healthcheck")
+@Component(
+    service = BindingsValuesProvider.class,
+    property = {
+        "context=healthcheck"
+    }
+)
 public class JmxScriptBindingsProvider implements BindingsValuesProvider {
     private MBeanServer jmxServer = ManagementFactory.getPlatformMBeanServer();
     private final Logger log = LoggerFactory.getLogger(getClass());

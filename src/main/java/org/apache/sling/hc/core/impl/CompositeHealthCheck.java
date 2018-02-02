@@ -18,20 +18,10 @@
 package org.apache.sling.hc.core.impl;
 
 import java.util.Arrays;
-import java.util.Dictionary;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import org.apache.felix.scr.annotations.Activate;
-import org.apache.felix.scr.annotations.Component;
-import org.apache.felix.scr.annotations.ConfigurationPolicy;
-import org.apache.felix.scr.annotations.Deactivate;
-import org.apache.felix.scr.annotations.Properties;
-import org.apache.felix.scr.annotations.Property;
-import org.apache.felix.scr.annotations.PropertyUnbounded;
-import org.apache.felix.scr.annotations.Reference;
-import org.apache.felix.scr.annotations.Service;
 import org.apache.sling.commons.osgi.PropertiesUtil;
 import org.apache.sling.hc.api.HealthCheck;
 import org.apache.sling.hc.api.Result;
@@ -48,6 +38,12 @@ import org.osgi.framework.Constants;
 import org.osgi.framework.ServiceReference;
 import org.osgi.service.component.ComponentConstants;
 import org.osgi.service.component.ComponentContext;
+import org.osgi.service.component.annotations.Activate;
+import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.ConfigurationPolicy;
+import org.osgi.service.component.annotations.Deactivate;
+import org.osgi.service.component.annotations.Reference;
+import org.osgi.service.metatype.annotations.Designate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -56,42 +52,22 @@ import org.slf4j.LoggerFactory;
  */
 
 @Component(
-        configurationFactory=true,
-        policy=ConfigurationPolicy.REQUIRE,
-        metatype=true,
-        label="Apache Sling Composite Health Check",
-        description="Executes a set of health checks, selected by tags.")
-@Properties({
-    @Property(name=HealthCheck.NAME,
-              label="Name",
-              description="Name of this health check."),
-    @Property(name=HealthCheck.TAGS, unbounded=PropertyUnbounded.ARRAY,
-              label="Tags",
-              description="List of tags for this health check, used to select " +
-                          "subsets of health checks for execution e.g. by a composite health check."),
-    @Property(name=HealthCheck.MBEAN_NAME,
-              label="MBean Name",
-              description="Name of the MBean to create for this health check. If empty, no MBean is registered.")
-})
-@Service(value=HealthCheck.class)
+    service = HealthCheck.class,
+    configurationPolicy = ConfigurationPolicy.REQUIRE
+)
+@Designate(
+    ocd = CompositeHealthCheckConfiguration.class,
+    factory = true
+)
 public class CompositeHealthCheck implements HealthCheck {
 
     private final Logger log = LoggerFactory.getLogger(getClass());
 
-    private static final boolean DEFAULT_COMBINE_TAGS_WITH_OR = false;
-
-    @Property(unbounded=PropertyUnbounded.ARRAY,
-              label="Filter Tags",
-              description="Tags used to select which health checks the composite health check executes.")
     static final String PROP_FILTER_TAGS = "filter.tags";
+
     private String [] filterTags;
 
-    @Property(boolValue = DEFAULT_COMBINE_TAGS_WITH_OR,
-            label="Combine Tags With Or",
-            description="Tags used to select which health checks the composite health check executes.")
-    static final String PROP_COMBINE_TAGS_WITH_OR = "filter.combineTagsWithOr";
     private boolean combineTagsWithOr;
-
 
     @Reference
     private HealthCheckExecutor healthCheckExecutor;
@@ -102,14 +78,13 @@ public class CompositeHealthCheck implements HealthCheck {
     private volatile ComponentContext componentContext;
 
     @Activate
-    protected void activate(final ComponentContext ctx) {
+    protected void activate(final CompositeHealthCheckConfiguration configuration, final ComponentContext ctx) {
         bundleContext = ctx.getBundleContext();
         componentContext = ctx;
         healthCheckFilter = new HealthCheckFilter(bundleContext);
 
-        final Dictionary properties = ctx.getProperties();
-        filterTags = PropertiesUtil.toStringArray(properties.get(PROP_FILTER_TAGS), new String[] {});
-        combineTagsWithOr = PropertiesUtil.toBoolean(properties.get(PROP_COMBINE_TAGS_WITH_OR), DEFAULT_COMBINE_TAGS_WITH_OR);
+        filterTags = configuration.filter_tags();
+        combineTagsWithOr = configuration.filter_combineTagsWithOr();
         log.debug("Activated, will select HealthCheck having tags {} {}", Arrays.asList(filterTags), combineTagsWithOr ? "using OR" : "using AND");
     }
 

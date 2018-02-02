@@ -17,14 +17,14 @@
  */
 package org.apache.sling.hc.core.impl.servlet;
 
-import org.apache.felix.scr.annotations.Component;
-import org.apache.felix.scr.annotations.Service;
 import org.apache.sling.hc.api.Result;
+import org.osgi.service.component.annotations.Component;
 
 /** Serializes health check results into a simple text message (ideal to be used by a load balancer that would discard
  * further information). */
-@Component
-@Service(ResultTxtSerializer.class)
+@Component(
+    service = ResultTxtSerializer.class
+)
 public class ResultTxtSerializer {
     public String serialize(final Result overallResult) {
         return overallResult.getStatus().toString();

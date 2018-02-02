@@ -20,61 +20,45 @@ package org.apache.sling.hc.core.impl.servlet;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.List;
-import java.util.Map;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.text.WordUtils;
-import org.apache.felix.scr.annotations.Activate;
-import org.apache.felix.scr.annotations.Component;
-import org.apache.felix.scr.annotations.Property;
-import org.apache.felix.scr.annotations.Service;
-import org.apache.sling.commons.osgi.PropertiesUtil;
 import org.apache.sling.hc.api.Result;
 import org.apache.sling.hc.api.ResultLog;
 import org.apache.sling.hc.api.execution.HealthCheckExecutionResult;
 import org.apache.sling.hc.util.FormattingResultLog;
+import org.osgi.service.component.annotations.Activate;
+import org.osgi.service.component.annotations.Component;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /** Serializes health check results into a verbose text message. */
-@Component(label = "Apache Sling Health Check Verbose Text Serializer", description = "Serializes health check results to a verbose text format", metatype = true)
-@Service(ResultTxtVerboseSerializer.class)
+@Component(
+    service = ResultTxtVerboseSerializer.class
+)
 public class ResultTxtVerboseSerializer {
 
     private static final Logger LOG = LoggerFactory.getLogger(ResultTxtVerboseSerializer.class);
 
     private static final String NEWLINE = "\n"; // not using system prop 'line.separator' as not the local but the calling system is relevant.
 
-    public static final int PROP_TOTAL_WIDTH_DEFAULT = 140;
-    public static final String PROP_TOTAL_WIDTH = "totalWidth";
-    @Property(name = PROP_TOTAL_WIDTH, label = "Total Width", description = "Total width of all columns in verbose txt rendering (in characters)", intValue = PROP_TOTAL_WIDTH_DEFAULT)
     private int totalWidth;
 
-    public static final int PROP_COL_WIDTH_NAME_DEFAULT = 30;
-    public static final String PROP_COL_WIDTH_NAME = "colWidthName";
-    @Property(name = PROP_COL_WIDTH_NAME, label = "Name Column Width", description = "Column width of health check name (in characters)", intValue = PROP_COL_WIDTH_NAME_DEFAULT)
     private int colWidthName;
 
-    public static final int PROP_COL_WIDTH_RESULT_DEFAULT = 9;
-    public static final String PROP_COL_WIDTH_RESULT = "colWidthResult";
-    @Property(name = PROP_COL_WIDTH_RESULT, label = "Result Column Width", description = "Column width of health check result (in characters)", intValue = PROP_COL_WIDTH_RESULT_DEFAULT)
     private int colWidthResult;
 
-    public static final int PROP_COL_WIDTH_TIMING_DEFAULT = 22;
-    public static final String PROP_COL_WIDTH_TIMING = "colWidthTiming";
-    @Property(name = PROP_COL_WIDTH_TIMING, label = "Timing Column Width", description = "Column width of health check timing (in characters)", intValue = PROP_COL_WIDTH_TIMING_DEFAULT)
     private int colWidthTiming;
 
     private int colWidthWithoutLog;
     private int colWidthLog;
 
     @Activate
-    protected final void activate(Map<?, ?> properties) {
-        this.totalWidth = PropertiesUtil.toInteger(properties.get(PROP_TOTAL_WIDTH), PROP_TOTAL_WIDTH_DEFAULT);
-        this.colWidthName = PropertiesUtil.toInteger(properties.get(PROP_COL_WIDTH_NAME), PROP_COL_WIDTH_NAME_DEFAULT);
-        this.colWidthResult = PropertiesUtil.toInteger(properties.get(PROP_COL_WIDTH_RESULT), PROP_COL_WIDTH_RESULT_DEFAULT);
-        this.colWidthTiming = PropertiesUtil.toInteger(properties.get(PROP_COL_WIDTH_TIMING), PROP_COL_WIDTH_TIMING_DEFAULT);
-
+    protected final void activate(final ResultTxtVerboseSerializerConfiguration configuration) {
+        this.totalWidth = configuration.totalWidth();
+        this.colWidthName = configuration.colWidthName();
+        this.colWidthResult = configuration.colWidthResult();
+        this.colWidthTiming = configuration.colWidthTiming();
         colWidthWithoutLog = colWidthName + colWidthResult + colWidthTiming;
         colWidthLog = totalWidth - colWidthWithoutLog;
     }
