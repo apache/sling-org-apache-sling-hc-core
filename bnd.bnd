@@ -7,7 +7,3 @@ Bundle-DocURL: https://sling.apache.org
 Bundle-License: Apache License, Version 2.0
 
 Bundle-Vendor: The Apache Software Foundation
-
--removeheaders:\
-  Include-Resource,\
-  Private-Package
